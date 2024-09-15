@@ -10,11 +10,12 @@ transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5
 #先转换为Tensor对象，在进行均值为0.5，方差为0.5的变化
 
 # 超参数
-num_epochs = 10
+num_epochs = 2
 batch_size = 64
 learning_rate = 1e-4
-#device = torch.device('mps')
-device = "cuda"
+device = torch.device('mps')
+#device = 'cuda'
+
 saved_model_path = "./saved_model"
 if not os.path.exists(saved_model_path):
     os.mkdir(saved_model_path)
@@ -35,21 +36,25 @@ test_datasets = datasets.MNIST(
 train_loader = DataLoader(train_datasets, batch_size=batch_size, shuffle=True) 
 test_loader = DataLoader(test_datasets, batch_size=batch_size)
 
-class Net(nn.Module):
+class MLPNet(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
-        self.fc1 = nn.Linear(28*28, 256)  
-        self.fc2 = nn.Linear(256, 128)   
-        self.fc3 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        super(MLPNet, self).__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_block = nn.Sequential(
+            nn.Linear(28*28, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 10)
+        )
+    
+    def forward(self, input):
+        x = self.flatten(input)
+        logits = self.linear_relu_block(x)
+        return logits
 
 # 初始化网络实例
-net = Net()
+net = MLPNet()
 # 定义损失函数和优化器
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
@@ -60,7 +65,7 @@ for epoch in range(num_epochs):
     train_loss = 0
     for i, (images, labels) in enumerate(train_loader):
         # 将图像数据展平为一维向量
-        images = images.reshape(-1, 28*28).to(device)
+        images = images.to(device)
         labels = labels.to(device)
         
         # 前向传播
@@ -83,7 +88,7 @@ for epoch in range(num_epochs):
     with torch.no_grad():
         true_num = 0
         for test_data, test_label in test_loader:
-            test_data = test_data.reshape(-1, 28*28).to(device)
+            test_data = test_data.to(device)
             test_label = test_label.to(device)
             test_out = net(test_data)
             # print(test_out.shape,test_label.shape) [64,10],[64]
