@@ -10,7 +10,7 @@ transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5
 #先转换为Tensor对象，在进行均值为0.5，方差为0.5的变化
 
 # 超参数
-num_epochs = 2
+num_epochs = 5
 batch_size = 64
 learning_rate = 1e-4
 device = torch.device('mps')
